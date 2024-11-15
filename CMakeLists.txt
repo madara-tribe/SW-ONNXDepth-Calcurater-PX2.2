@@ -1,36 +1,15 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.13)
 
-project(ort_utility VERSION 0.0.2)
-set (CMAKE_CXX_STANDARD 17)
+project(ONNX_Runtime_Examples VERSION 0.0.1 LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+# onnxruntime
+find_path(ONNX_RUNTIME_SESSION_INCLUDE_DIRS onnxruntime_cxx_api.h HINTS /usr/local/include/onnxruntime/core/session/)
+find_path(ONNX_RUNTIME_PROVIDERS_INCLUDE_DIRS cuda_provider_factory.h HINTS /usr/local/include/onnxruntime/core/providers/cuda/)
+find_library(ONNX_RUNTIME_LIB onnxruntime HINTS /usr/local/lib)
 
-set(onnxruntime_INSTALL_PREFIX /usr/local)
-set(onnxruntime_INCLUDE_DIRS
-  ${onnxruntime_INSTALL_PREFIX}/include/onnxruntime
-  ${onnxruntime_INSTALL_PREFIX}/include/onnxruntime/core/session
-)
-
-find_library(onnxruntime_LIBS NAMES onnxruntime PATHS /usr/local/lib)
-
-find_package(CUDA QUIET)
-
-if(CUDA_FOUND AND USE_GPU)
-  add_definitions(-DENABLE_GPU=1)
-  include(tensorrt)
-  if (TENSORRT_FOUND)
-    add_definitions(-DENABLE_TENSORRT=1)
-  endif()
-else()
-  add_definitions(-DENABLE_GPU=0)
-  add_definitions(-DENABLE_TENSORRT=0)
-endif()
-
-
-add_compile_options(
-  "$<$<CONFIG:Debug>:-DENABLE_DEBUG=1>"
-  "$<$<CONFIG:Release>:-DENABLE_DEBUG=0>"
-)
+# cv2
+find_package(OpenCV REQUIRED)
 
 add_subdirectory(src)
-

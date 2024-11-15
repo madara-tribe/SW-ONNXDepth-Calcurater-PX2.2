@@ -1,33 +1,14 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.13)
 
-set(LIBRARY_NAME ${PROJECT_NAME})
+project(ONNX_Runtime_Inference VERSION 0.0.1 LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_BUILD_TYPE RelWithDebInfo)
 add_executable(inference inference.cpp)
-file(GLOB SOURCE_FILES
-	${PROJECT_SOURCE_DIR}/src/OrtSessionHandler.cpp
-)
 
-add_library(${LIBRARY_NAME}
-  SHARED
-     ${SOURCE_FILES}
-)
+# onnxruntime
+target_include_directories(inference PRIVATE ${ONNX_RUNTIME_SESSION_INCLUDE_DIRS} ${ONNX_RUNTIME_PROVIDERS_INCLUDE_DIRS})
+target_link_libraries(inference PRIVATE ${ONNX_RUNTIME_LIB})
 
-target_include_directories(${LIBRARY_NAME}
-  PUBLIC
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-  PRIVATE
-    ${onnxruntime_INCLUDE_DIRS}
-)
-
-target_compile_options(${LIBRARY_NAME}
-  PRIVATE
-     $<$<CONFIG:Debug>:-O0 -g -Wall -Werror>
-     $<$<CONFIG:Release>:-O3>
-)
-
-list(APPEND PRIVATE_LIBS ${onnxruntime_LIBS})
-
-target_link_libraries(${LIBRARY_NAME}
-  PRIVATE
-    ${PRIVATE_LIBS}
-)
+# cv2
+target_include_directories(inference PUBLIC ${OpenCV_INCLUDE_DIRS})
+target_link_libraries(inference PUBLIC ${OpenCV_LIBS})

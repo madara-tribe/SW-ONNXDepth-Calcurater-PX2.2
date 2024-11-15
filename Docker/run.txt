@@ -1,4 +1,4 @@
 docker build -t test .
 docker run --device==/dev/video0:/dev/video0 -v /Users/hagi/downloads/place/place/DEPTH/cpp_onnx/:/home/app --rm -it depth:latest bash
 
-docker run -it --rm -v /Users/hagi/downloads/place/place/DEPTH/cpp_onnx/:/workspace test:latest
+docker run -it --rm -v /Users/hagi/downloads/place/place/DepthInference/:/workspace test:latest
