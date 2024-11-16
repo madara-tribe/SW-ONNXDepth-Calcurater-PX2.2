@@ -47,7 +47,7 @@ int main(int argc, char* argv[])
     int w = img.cols;
     
     // Create inference
-    Inference inference(onnx_model_path);
+    Inference inference(onnx_model_path, useCUDA);
 
     auto start = std::chrono::high_resolution_clock::now();
     //std::vector<float> depth_map = inference.inference(img);

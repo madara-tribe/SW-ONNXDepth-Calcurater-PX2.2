@@ -8,17 +8,16 @@
 
 class Inference {
 public:
-    Inference(const std::string& model_path);
+    Inference(const std::string& model_path, bool useCUDA);
     cv::Mat run_inference(const cv::Mat& input_image);
 
 private:
-    std::unique_ptr<Ort::Session> session;
+    Ort::SessionOptions sessionOptions;
     Ort::AllocatorWithDefaultOptions allocator;
-    Ort::MemoryInfo memory_info;
     const char* input_name;
     const char* output_name;
-    int net_h;
-    int net_w;
+    int net_h = 384;
+    int net_w = 384;
 };
 
 #endif // INFERENCE_H
