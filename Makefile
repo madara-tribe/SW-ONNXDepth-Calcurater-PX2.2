@@ -6,7 +6,9 @@ USE_GPU=OFF
 default:
 	@cmake -B build
 	@cmake --build build --config Release --parallel
-	@cd build/src && ./inference 
+	@cd build/src
+	@./inference 
 
 clean:
 	@rm -rf build*
+

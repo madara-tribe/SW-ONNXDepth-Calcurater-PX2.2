@@ -1,14 +1,16 @@
 cmake_minimum_required(VERSION 3.13)
 
-project(ONNX_Runtime_Inference VERSION 0.0.1 LANGUAGES CXX)
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_BUILD_TYPE RelWithDebInfo)
-add_executable(inference inference.cpp)
+set(LIBRARY_NAME ${PROJECT_NAME})
+
+add_executable(inference inference.cpp class.cpp)
+
+# include
+target_include_directories(${LIBRARY_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
 # onnxruntime
-target_include_directories(inference PRIVATE ${ONNX_RUNTIME_SESSION_INCLUDE_DIRS} ${ONNX_RUNTIME_PROVIDERS_INCLUDE_DIRS})
-target_link_libraries(inference PRIVATE ${ONNX_RUNTIME_LIB})
+target_include_directories(${LIBRARY_NAME} PRIVATE ${ONNX_RUNTIME_SESSION_INCLUDE_DIRS} ${ONNX_RUNTIME_PROVIDERS_INCLUDE_DIRS})
+target_link_libraries(${LIBRARY_NAME} PRIVATE ${ONNX_RUNTIME_LIB})
 
-# cv2
-target_include_directories(inference PUBLIC ${OpenCV_INCLUDE_DIRS})
-target_link_libraries(inference PUBLIC ${OpenCV_LIBS})
+# cv2 
+target_include_directories(${LIBRARY_NAME} PUBLIC ${OpenCV_INCLUDE_DIRS})
+target_link_libraries(${LIBRARY_NAME} PUBLIC ${OpenCV_LIBS})
