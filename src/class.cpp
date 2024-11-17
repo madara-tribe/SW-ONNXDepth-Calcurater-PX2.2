@@ -1,9 +1,7 @@
 #include "depth_utility.h"
 
 Inference::Inference(const std::string& model_path, bool useCUDA) {
-    Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "Inference");
     std::string modelFilepath{model_path};
-     
     sessionOptions.SetIntraOpNumThreads(1);
     if (useCUDA)
     {
@@ -12,50 +10,55 @@ Inference::Inference(const std::string& model_path, bool useCUDA) {
         OrtCUDAProviderOptions cuda_options{};
         sessionOptions.AppendExecutionProvider_CUDA(cuda_options);
     }
-    sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
-    Ort::Session session(env, modelFilepath.c_str(), sessionOptions);
-    
-    Ort::MemoryInfo memoryInfo = Ort::MemoryInfo::CreateCpu(
-        OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
-
-    size_t numInputNodes = session.GetInputCount();
-    size_t numOutputNodes = session.GetOutputCount();
-
-    // input 
-    const auto inputName = session.GetInputNameAllocated(0, allocator);
-    Ort::TypeInfo inputTypeInfo = session.GetInputTypeInfo(0);
-    auto inputTensorInfo = inputTypeInfo.GetTensorTypeAndShapeInfo();
-    std::vector<int64_t> inputDims = inputTensorInfo.GetShape();
-
-    ONNXTensorElementDataType inputType = inputTensorInfo.GetElementType();
-
-    // output
-    const auto outputName = session.GetOutputNameAllocated(0, allocator);
-    Ort::TypeInfo outputTypeInfo = session.GetOutputTypeInfo(0);
-    auto outputTensorInfo = outputTypeInfo.GetTensorTypeAndShapeInfo();
-    std::vector<int64_t> outputDims = outputTensorInfo.GetShape();
-
-    ONNXTensorElementDataType outputType = outputTensorInfo.GetElementType();
-
-    std::vector<const char*> inputNames{inputName};
-    std::vector<const char*> outputNames{outputName};
-    
-    std::cout << "Number of Input Nodes: " << numInputNodes << std::endl;
-    std::cout << "Number of Output Nodes: " << numOutputNodes << std::endl;
-    std::cout << "Input Name: " << inputName << std::endl;
-    std::cout << "Input Type: " << inputType << std::endl;
-    std::cout << "Input Dimensions: " << inputDims << std::endl;
-    std::cout << "Output Name: " << outputName << std::endl;
-    std::cout << "Output Type: " << outputType << std::endl;
-    std::cout << "Output Dimensions: " << outputDims << std::endl;
+    // sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
+    Ort::Session session = Ort::Session(env, modelFilepath.c_str(), sessionOptions);
 
     
-    std::vector<Ort::Value> inputTensors;
-    std::vector<Ort::Value> outputTensors;
+    Ort::MemoryInfo memoryInfo(Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU));
     
-     
+    std::vector<float> input_data(1 * 3 * net_h * net_w);
+    std::vector<float> output_data(1 * 3 * net_h * net_w);
+
+    const std::vector<int64_t> input_shapes{1, 3, net_h, net_w};
+    const std::vector<int64_t> output_shapes{1, 3, net_h, net_w};
+
+    // create input output tenspr
+    Ort::Value input_tensor = Ort::Value::CreateTensor<float>(memoryInfo, input_data.data(), input_data.size(), input_shapes.data(), input_shapes.size());
+    Ort::Value output_tensor = Ort::Value::CreateTensor<float>(memoryInfo, output_data.data(), output_data.size(), output_shapes.data(), output_shapes.size());
+
+    
+    // Prepare Input node
+    size_t m_numInputs = session.GetInputCount();
+    std::vector<const char*> input_node_names(m_numInputs);
+    for (size_t i = 0; i < m_numInputs; i++) {
+        char* input_name = session.GetInputNameAllocated(i, allocator).get();
+        input_node_names[i] = input_name;
+    }
+    // Print input node names
+    std::cout << "Input node names: " << std::endl;
+    for (const auto& name : input_node_names) {
+        std::cout << name << std::endl;
+    }
+    std::cout << "num Input:" << m_numInputs << std::endl;
+    // Prepare Output node t
+    size_t m_numOutputs = session.GetOutputCount();
+    std::vector<const char*> output_node_names(m_numOutputs);
+    for (size_t i = 0; i < m_numOutputs; i++) {
+        char* output_name = session.GetOutputNameAllocated(i, allocator).get();
+        output_node_names[i] = output_name;
+    }
+    std::cout << "Output node names: " << std::endl;
+    for (const auto& oname : output_node_names) {
+        std::cout << oname << std::endl;
+    }
+    std::cout << "num Output:" << m_numOutputs << std::endl;
+    
+    
+    // Inference 
+    session.Run(Ort::RunOptions{nullptr}, input_node_names.data(), &input_tensor, m_numInputs, output_node_names.data(), &output_tensor, m_numInputs);
+
 }
-
+/*
 cv::Mat Inference::run_inference(const cv::Mat& input_image) {
     // Preprocess image
     cv::Mat img_resized;
@@ -77,3 +80,4 @@ cv::Mat Inference::run_inference(const cv::Mat& input_image) {
     return depth_map.clone();  // Clone to prevent shared memory issues
 }
 
+ */
