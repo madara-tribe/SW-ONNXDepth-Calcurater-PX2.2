@@ -2,8 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 
 set(LIBRARY_NAME ${PROJECT_NAME})
 
-add_executable(inference inference.cpp class.cpp)
-
+add_executable(inference inference.cpp midas_inference.cpp)
 # include
 target_include_directories(${LIBRARY_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
