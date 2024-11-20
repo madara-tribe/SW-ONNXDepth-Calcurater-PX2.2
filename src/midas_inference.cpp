@@ -1,13 +1,11 @@
 #include "midas_inference.h"
 #include <iostream>
 #include <cstring>
-#include <chrono>
 
 
-MidasInference::MidasInference(const std::string& modelPath, bool useCUDA)
-    : env(ORT_LOGGING_LEVEL_WARNING, "Midas"), useCUDA(useCUDA) {
+MidasInference::MidasInference(const std::string& modelPath, bool useCUDA){
     sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
-    sessionOptions.SetIntraOpNumThreads(0);
+    sessionOptions.SetIntraOpNumThreads(numthreads);
 
     if (useCUDA) {
         OrtCUDAProviderOptions cuda_options{};
@@ -58,9 +56,6 @@ cv::Mat MidasInference::verifyOutput(float* output) {
 }
 
 void MidasInference::draw_depth(const cv::Mat& depth_map, int w, int h) {
-    const double set_min_depth = 0.0;
-    const double set_max_depth = 100.0;
-
     double min_depth, max_depth;
     cv::minMaxLoc(depth_map, &min_depth, &max_depth);
     min_depth = std::min(min_depth, set_min_depth);
@@ -70,15 +65,13 @@ void MidasInference::draw_depth(const cv::Mat& depth_map, int w, int h) {
     norm_depth_map = 255.0 * (depth_map - min_depth) / (max_depth - min_depth);
     norm_depth_map = 255.0 - norm_depth_map;
 
-    cv::Mat abs_depth_map;
-    norm_depth_map.convertTo(abs_depth_map, CV_8U);
-
     cv::Mat color_depth;
-    cv::applyColorMap(abs_depth_map, color_depth, cv::COLORMAP_JET);
+    norm_depth_map.convertTo(color_depth, CV_8U);
 
-    cv::Mat resized_color_depth;
-    cv::resize(color_depth, resized_color_depth, cv::Size(w, h));
-    cv::imwrite("color_map2.png", resized_color_depth);
+    cv::applyColorMap(color_depth, color_depth, cv::COLORMAP_JET);
+
+    cv::resize(color_depth, color_depth, cv::Size(w, h));
+    cv::imwrite("color_map2.png", color_depth);
 }
 
 void MidasInference::runInference(const cv::Mat& inputImage) {
@@ -100,17 +93,11 @@ void MidasInference::runInference(const cv::Mat& inputImage) {
     const std::vector<int64_t> output_shapes{1, H, W};
     Ort::Value output_tensor = Ort::Value::CreateTensor<float>(memory_info, output_data.data(), output_data.size(), output_shapes.data(), output_shapes.size());
 
-    Ort::RunOptions run_options;
     session->Run(run_options, &input_node_name, &inputTensor, 1U, &output_node_name, &output_tensor, 1U);
 
-    auto start = std::chrono::high_resolution_clock::now();
     float* output = output_tensor.GetTensorMutableData<float>();
     cv::Mat depth_map = verifyOutput(output);
     draw_depth(depth_map, inputWidth, inputHeight);
-    auto end = std::chrono::high_resolution_clock::now();
-
-    std::chrono::duration<double> diff = end - start;
-    std::cout << "Prediction took " << diff.count() << " seconds" << std::endl;
 
     delete[] blob;
 }

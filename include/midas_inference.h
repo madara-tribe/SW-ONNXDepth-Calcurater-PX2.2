@@ -18,12 +18,16 @@ private:
     Ort::Env env;
     Ort::SessionOptions sessionOptions;
     Ort::Session* session;
+    Ort::RunOptions run_options;
+    int numthreads = 0;
+    
     int H = 384;
     int W = 384;
     const char* input_node_name = "x.1";
     const char* output_node_name = "3195";
     
-    bool useCUDA;
+    const double set_min_depth = 0.0;
+    const double set_max_depth = 100.0;
 };
 
 #endif // MIDAS_INFERENCE_H

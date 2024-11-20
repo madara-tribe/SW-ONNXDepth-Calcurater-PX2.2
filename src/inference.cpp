@@ -29,7 +29,11 @@ int main(int argc, char* argv[]) {
     }
 
     MidasInference midas(onnx_model_path, useCUDA);
+    
+    auto start = std::chrono::high_resolution_clock::now();
     midas.runInference(img);
-
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> diff = end - start;
+    std::cout << "Prediction took " << diff.count() << " seconds" << std::endl;
     return 0;
 }
