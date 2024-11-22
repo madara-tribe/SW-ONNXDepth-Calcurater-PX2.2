@@ -1,4 +1,6 @@
+#include "utility.h"
 #include "midas_inference.h"
+
 #include <iostream>
 #include <cstring>
 
@@ -19,26 +21,22 @@ MidasInference::~MidasInference() {
     delete session;
 }
 
-bool MidasInference::BlobFromImage(cv::Mat& iImg, float* iBlob) {
+cv::Mat MidasInference::PreProcess(cv::Mat& iImg) {
+    cv::cvtColor(iImg, iImg, cv::COLOR_BGR2RGB);
+    cv::Mat resizedImage;
+    cv::resize(iImg, iImg, cv::Size(W, H), cv::InterpolationFlags::INTER_CUBIC);
     cv::Mat channel_[3];
     cv::split(iImg, channel_);
     channel_[0] = (channel_[0] - 0.5) / 0.5;
     channel_[1] = (channel_[1] - 0.5) / 0.5;
     channel_[2] = (channel_[2] - 0.5) / 0.5;
     cv::merge(channel_, 3, iImg);
-
-    int channels = iImg.channels();
-    int imgHeight = iImg.rows;
-    int imgWidth = iImg.cols;
-
-    for (int c = 0; c < channels; c++) {
-        for (int h = 0; h < imgHeight; h++) {
-            for (int w = 0; w < imgWidth; w++) {
-                iBlob[c * imgWidth * imgHeight + h * imgWidth + w] = static_cast<float>(iImg.at<cv::Vec3b>(h, w)[c] / 255.0);
-            }
-        }
-    }
-    return true;
+    
+    cv::Mat floatImage;
+    iImg.convertTo(floatImage, CV_32F, 1.0 / 255.0);
+    
+    cv::Mat blobImage = cv::dnn::blobFromImage(floatImage);
+    return blobImage;
 }
 
 cv::Mat MidasInference::verifyOutput(float* output) {
@@ -74,20 +72,17 @@ void MidasInference::draw_depth(const cv::Mat& depth_map, int w, int h) {
     cv::imwrite("color_map2.png", color_depth);
 }
 
-void MidasInference::runInference(const cv::Mat& inputImage) {
-    int inputHeight = inputImage.rows;
-    int inputWidth = inputImage.cols;
-
-    cv::Mat processedImg;
-    cv::cvtColor(inputImage, processedImg, cv::COLOR_BGR2RGB);
-    cv::resize(processedImg, processedImg, cv::Size(W, H), cv::InterpolationFlags::INTER_CUBIC);
-
-    float* blob = new float[H * W * 3];
-    BlobFromImage(processedImg, blob);
+void MidasInference::runInference(const char* imgPath) {
+    cv::Mat img = cv::imread(imgPath);
+    
+    int inputHeight = img.rows;
+    int inputWidth = img.cols;
+    
+    cv::Mat blob = PreProcess(img);
 
     std::vector<int64_t> inputNodeDims = {1, 3, H, W};
     Ort::MemoryInfo memory_info(Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU));
-    Ort::Value inputTensor = Ort::Value::CreateTensor<float>(memory_info, blob, 3 * H * W, inputNodeDims.data(), inputNodeDims.size());
+    Ort::Value inputTensor = Ort::Value::CreateTensor<float>(memory_info, blob.ptr<float>(), blob.total() * sizeof(float), inputNodeDims.data(), inputNodeDims.size());
 
     std::vector<float> output_data(1 * H * W);
     const std::vector<int64_t> output_shapes{1, H, W};
@@ -98,8 +93,6 @@ void MidasInference::runInference(const cv::Mat& inputImage) {
     float* output = output_tensor.GetTensorMutableData<float>();
     cv::Mat depth_map = verifyOutput(output);
     draw_depth(depth_map, inputWidth, inputHeight);
-
-    delete[] blob;
 }
 
 

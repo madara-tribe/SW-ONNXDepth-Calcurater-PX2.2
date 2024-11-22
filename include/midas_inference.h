@@ -9,10 +9,10 @@ public:
     MidasInference(const std::string& modelPath, bool useCUDA = false);
     ~MidasInference();
 
-    bool BlobFromImage(cv::Mat& iImg, float* iBlob);
+    cv::Mat PreProcess(cv::Mat& iImg);
     cv::Mat verifyOutput(float* output);
     void draw_depth(const cv::Mat& depth_map, int w, int h);
-    void runInference(const cv::Mat& inputImage);
+    void runInference(const char* imgPath);
 
 private:
     Ort::Env env;
