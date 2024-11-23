@@ -1,43 +1,69 @@
 #include "utility.h"
 #include "yolo_inference.h"
 
-#include <iostream>
-#include <cstring>
+std::vector<std::string> classNames = {
+    "person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat",
+    "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat",
+    "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack",
+    "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball",
+    "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket",
+    "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple",
+    "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair",
+    "sofa", "potted plant", "bed", "dining table", "toilet", "tv monitor", "laptop", "mouse",
+    "remote", "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator",
+    "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"
+};
 
 YoloDetect::YoloDetect(const std::string& modelPath){
-    session = new Ort::Session(env, modelPath, session_options);
+    session_options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
+    session_options.SetIntraOpNumThreads(numthreads);
     
-}
-YoloDetect::~YoloDetect() {
-    delete session;
+    session = new Ort::Session(env, modelPath.c_str(), session_options);
 }
 
-float* YoloDetect::RunSession(cv::Mat inputImage){
-    size_t num_input_nodes = session.GetInputCount();
-    size_t num_output_nodes = session.GetOutputCount();
-    std::vector<int64_t> inputDims = session.GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape();
+std::vector<Result> YoloDetect::postprocess(cv::Size originalImageSize, std::vector<Ort::Value>& outputTensors)
+{
+    auto* rawOutput = outputTensors[0].GetTensorData<float>();
+    std::vector<int64_t> outputShape = outputTensors[0].GetTensorTypeAndShapeInfo().GetShape();
+    size_t count = outputTensors[0].GetTensorTypeAndShapeInfo().GetElementCount();
+    std::vector<float> output(rawOutput, rawOutput + count);
 
-    model_input_height = inputDims.at(3);
-    model_input_width = inputDims.at(2);
-    Ort::MemoryInfo memoryInfo = Ort::MemoryInfo::CreateCpu(
-                OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
+    std::vector<Result> resultVector;
 
-    Ort::Value inputTensor = Ort::Value::CreateTensor<float>(memoryInfo,
-                                                              inputImage.ptr<float>(),
-                                                              inputImage.total() * sizeof(float),
-                                                              inputDims.data(),
-                                                              inputDims.size());
+    for (int i = 0; i < outputShape[0]; i++) {
 
-    std::vector<Ort::Value> outputTensors = session.Run(Ort::RunOptions{nullptr},
-                                                        &input_node_name,
-                                                        &inputTensor,
-                                                        num_input_nodes,
-                                                        &output_node_name,
-                                                        num_output_nodes);
-    float* rawOutput = outputTensors[0].GetTensorData<float>();
-    return rawOutput
+        float confidence        = output[i * outputShape[1] + 0];
+        float x1                = output[i * outputShape[1] + 1];
+        float y1                = output[i * outputShape[1] + 2];
+        float x2                = output[i * outputShape[1] + 3];
+        float y2                = output[i * outputShape[1] + 4];
+        int classPrediction     = output[i * outputShape[1] + 5];
+        float accuracy          = output[i * outputShape[1] + 6];
+
+        (void) confidence;
+
+        std::cout << "Class Name: " << classNames.at(classPrediction) << std::endl;
+        std::cout << "Coords: Top Left (" << x1 << ", " << y1 << "), Bottom Right (" << x2 << ", " << y2 << ")" << std::endl;
+        std::cout << "Accuracy: " << accuracy << std::endl;
+
+        // Coords should be scaled to the original image. The coords from the model are relative to the model's input height and width.
+        x1 = ((x1- pad_size_x)  / model_width_after_padding) * originalImageSize.width ;
+        x2 = ((x2- pad_size_x) / model_width_after_padding) * originalImageSize.width ;
+        y1 = ((y1 - pad_size_y) / model_height_after_padding) * originalImageSize.height ;
+        y2 = ((y2 - pad_size_y) / model_height_after_padding) * originalImageSize.height ;
+
+        Result result(x1, x2, y1, y2, classPrediction, accuracy);
+
+        resultVector.push_back( result );
+
+        std::cout << std::endl;
+    }
+
+    return resultVector;
 }
-cv::Mat YoloDetect::preprocess(cv::Mat& image){
+
+
+cv::Mat YoloDetect::preprocess(cv::Mat& image, int model_input_width, int model_input_height){
 
     // Channels order: BGR to RGB
     cv::cvtColor(image, image, cv::COLOR_BGR2RGB);
@@ -78,46 +104,6 @@ cv::Mat YoloDetect::preprocess(cv::Mat& image){
     return blobImage;
 }
 
-std::vector<Result> YoloDetect::postprocess(cv::Size originalImageSize, float* rawOutput)
-{
-    std::vector<int64_t> outputShape = outputTensors[0].GetTensorTypeAndShapeInfo().GetShape();
-    size_t count = outputTensors[0].GetTensorTypeAndShapeInfo().GetElementCount();
-    std::vector<float> output(rawOutput, rawOutput + count);
-
-    std::vector<Result> resultVector;
-
-    for (int i = 0; i < outputShape[0]; i++) {
-
-        float confidence        = output[i * outputShape[1] + 0];
-        float x1                = output[i * outputShape[1] + 1];
-        float y1                = output[i * outputShape[1] + 2];
-        float x2                = output[i * outputShape[1] + 3];
-        float y2                = output[i * outputShape[1] + 4];
-        int classPrediction     = output[i * outputShape[1] + 5];
-        float accuracy          = output[i * outputShape[1] + 6];
-
-        (void) confidence;
-
-        std::cout << "Class Name: " << classNames.at(classPrediction) << std::endl;
-        std::cout << "Coords: Top Left (" << x1 << ", " << y1 << "), Bottom Right (" << x2 << ", " << y2 << ")" << std::endl;
-        std::cout << "Accuracy: " << accuracy << std::endl;
-
-        // Coords should be scaled to the original image. The coords from the model are relative to the model's input height and width.
-        x1 = ((x1- pad_size_x)  / model_width_after_padding) * originalImageSize.width ;
-        x2 = ((x2- pad_size_x) / model_width_after_padding) * originalImageSize.width ;
-        y1 = ((y1 - pad_size_y) / model_height_after_padding) * originalImageSize.height ;
-        y2 = ((y2 - pad_size_y) / model_height_after_padding) * originalImageSize.height ;
-
-        Result result( x1, x2, y1, y2, classPrediction, accuracy);
-
-        resultVector.push_back( result );
-
-        std::cout << std::endl;
-    }
-
-    return resultVector;
-}
-
 void YoloDetect::drawBoundingBox(cv::Mat& image, std::vector<Result>& resultVector){
     for( auto result : resultVector ) {
 
@@ -135,4 +121,31 @@ void YoloDetect::drawBoundingBox(cv::Mat& image, std::vector<Result>& resultVect
         }
     }
 
+}
+
+std::vector<Ort::Value> YoloDetect::RunInference(cv::Mat& inputImage){
+    
+    size_t num_input_nodes = session->GetInputCount();
+    size_t num_output_nodes = session->GetOutputCount();
+    std::vector<int64_t> inputDims = session->GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape();
+
+    int model_input_height = inputDims.at(3);
+    int model_input_width = inputDims.at(2);
+    
+    Ort::MemoryInfo memoryInfo = Ort::MemoryInfo::CreateCpu(
+                OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
+
+    Ort::Value inputTensor = Ort::Value::CreateTensor<float>(memoryInfo,
+                                                              inputImage.ptr<float>(),
+                                                              inputImage.total() * sizeof(float),
+                                                              inputDims.data(),
+                                                              inputDims.size());
+    
+    std::vector<Ort::Value> outputTensors = session->Run(Ort::RunOptions{nullptr},
+                                                        &input_node_name,
+                                                        &inputTensor,
+                                                        num_input_nodes,
+                                                        &output_node_name,
+                                                        num_output_nodes);
+    return outputTensors;
 }

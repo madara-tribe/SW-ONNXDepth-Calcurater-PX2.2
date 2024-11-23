@@ -3,6 +3,8 @@
 
 #include <opencv2/opencv.hpp>
 #include <onnxruntime/core/session/onnxruntime_cxx_api.h>
+#include <iostream>
+#include <cstring>
 
 class MidasInference {
 public:

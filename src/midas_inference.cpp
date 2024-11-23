@@ -1,9 +1,6 @@
 #include "utility.h"
 #include "midas_inference.h"
 
-#include <iostream>
-#include <cstring>
-
 
 MidasInference::MidasInference(const std::string& modelPath, bool useCUDA){
     sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);

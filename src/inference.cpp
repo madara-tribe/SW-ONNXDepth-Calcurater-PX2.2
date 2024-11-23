@@ -1,5 +1,3 @@
-#include <iostream>
-#include <cstring>
 #include <chrono>
 
 #define ONNX_DEPTH_PATH "/workspace/weights/dpt_large_384.onnx"
