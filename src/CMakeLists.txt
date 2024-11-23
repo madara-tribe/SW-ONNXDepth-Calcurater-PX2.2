@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 3.13)
 
 set(LIBRARY_NAME ${PROJECT_NAME})
 
-add_executable(inference inference.cpp midas_inference.cpp)
+add_executable(inference inference.cpp midas_inference.cpp yolo_inference.cpp)
+#add_executable(yolo main.cpp yolo_inference.cpp)
+
 
 # include
 target_include_directories(${LIBRARY_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
@@ -14,3 +16,7 @@ target_link_libraries(${LIBRARY_NAME} PRIVATE ${ONNX_RUNTIME_LIB})
 # cv2 
 target_include_directories(${LIBRARY_NAME} PUBLIC ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(${LIBRARY_NAME} PUBLIC ${OpenCV_LIBS})
+
+# torch
+target_link_libraries(${LIBRARY_NAME} PUBLIC ${TORCH_LIBRARIES})
+set_property(TARGET ${LIBRARY_NAME} PROPERTY CXX_STANDARD 17)

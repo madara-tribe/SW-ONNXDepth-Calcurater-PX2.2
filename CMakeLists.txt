@@ -11,4 +11,6 @@ find_library(ONNX_RUNTIME_LIB onnxruntime HINTS /usr/local/lib)
 # cv2
 find_package(OpenCV REQUIRED)
 
+# torch
+
 add_subdirectory(src)
