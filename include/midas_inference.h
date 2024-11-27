@@ -16,8 +16,8 @@ public:
 
     std::vector<float> PreProcess(cv::Mat& iImg);
     cv::Mat verifyOutput(std::vector<float> output);
-    void draw_depth(const cv::Mat& depth_map, int oriW, int oriH);
-    void runInference(const char* imgPath);
+    cv::Mat draw_depth(const cv::Mat& depth_map, int oriW, int oriH);
+    cv::Mat runInference(cv::Mat& img);
 
 private:
     Ort::SessionOptions sessionOptions;

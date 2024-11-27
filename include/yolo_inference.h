@@ -33,7 +33,7 @@ typedef struct Result {
 class YoloDetect {
 public:
     YoloDetect(const std::string& modelPath);
-    void drawBoundingBox(cv::Mat& image, std::vector<Result>& resultVector);
+    cv::Mat drawBoundingBox(cv::Mat& image, std::vector<Result>& resultVector);
     cv::Mat preprocess(cv::Mat& image, int model_input_width, int model_input_height);
     std::vector<Result> postprocess(cv::Size originalImageSize, std::vector<Ort::Value>& outputTensors);
     std::vector<Ort::Value> RunInference(cv::Mat& inputImage);

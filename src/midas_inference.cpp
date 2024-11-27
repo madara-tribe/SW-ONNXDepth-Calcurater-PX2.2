@@ -47,7 +47,7 @@ cv::Mat MidasInference::verifyOutput(std::vector<float> output) {
     return segMat;
 }
 
-void MidasInference::draw_depth(const cv::Mat& depth_map, int oriW, int oriH) {
+cv::Mat MidasInference::draw_depth(const cv::Mat& depth_map, int oriW, int oriH) {
     float min_val = 0;
     float max_val = 100;
 
@@ -60,11 +60,10 @@ void MidasInference::draw_depth(const cv::Mat& depth_map, int oriW, int oriH) {
     cv::applyColorMap(norm_depth_map, color_depth, cv::COLORMAP_JET);
     cv::resize(color_depth, color_depth, cv::Size(oriW, oriH));
     cv::imwrite("color_map.jpg", color_depth);
+    return color_depth;
 }
 
-void MidasInference::runInference(const char* imgPath) {
-    cv::Mat img = cv::imread(imgPath);
-    
+cv::Mat MidasInference::runInference(cv::Mat& img) {
     int inputHeight = img.rows;
     int inputWidth = img.cols;
     int insize = H * W * 3;
@@ -89,6 +88,7 @@ void MidasInference::runInference(const char* imgPath) {
     session->Run(run_options, &input_node_name, &inputTensor, 1U, &output_node_name, &output_tensor, 1U);
 
     cv::Mat depth_map = verifyOutput(results);
-    draw_depth(depth_map, inputWidth, inputHeight);
+    cv::Mat color_depth = draw_depth(depth_map, inputWidth, inputHeight);
+    return color_depth;
 }
 

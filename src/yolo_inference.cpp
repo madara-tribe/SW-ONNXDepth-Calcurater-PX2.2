@@ -103,7 +103,7 @@ cv::Mat YoloDetect::preprocess(cv::Mat& image, int model_input_width, int model_
     return blobImage;
 }
 
-void YoloDetect::drawBoundingBox(cv::Mat& image, std::vector<Result>& resultVector){
+cv::Mat YoloDetect::drawBoundingBox(cv::Mat& image, std::vector<Result>& resultVector){
     for( auto result : resultVector ) {
 
         if( result.accuracy > 0.6 ) { // Threshold, can be made function parameter
@@ -119,6 +119,7 @@ void YoloDetect::drawBoundingBox(cv::Mat& image, std::vector<Result>& resultVect
                         0.8, cv::Scalar(255, 255, 0), 2);
         }
     }
+    return image;
 
 }
 
