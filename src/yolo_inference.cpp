@@ -14,10 +14,10 @@ std::vector<std::string> classNames = {
 };
 
 YoloDetect::YoloDetect(const std::string& modelPath){
-    session_options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
-    session_options.SetIntraOpNumThreads(numthreads);
+    sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
+    sessionOptions.SetIntraOpNumThreads(numthreads);
     
-    session = new Ort::Session(env, modelPath.c_str(), session_options);
+    session = new Ort::Session(env, modelPath.c_str(), sessionOptions);
 }
 
 std::vector<Result> YoloDetect::postprocess(cv::Size originalImageSize, std::vector<Ort::Value>& outputTensors)

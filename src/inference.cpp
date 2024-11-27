@@ -1,4 +1,5 @@
 #include <chrono>
+//#include "utility.h"
 #include "yolo_inference.h"
 #include "midas_inference.h"
 
@@ -10,7 +11,7 @@
 #define YOLO_INPUT_W 640
 
 
-int yolo(){
+void yolo(){
     std::string model_path = ONNX_YOLO_PATH;
     YoloDetect yolo_detector(model_path);
     
@@ -24,8 +25,6 @@ int yolo(){
 
     yolo_detector.drawBoundingBox(image, resultVector);
     cv::imwrite("resultt.png", image);
-
-    return 0;
 }
 
 int main(int argc, char* argv[]) {

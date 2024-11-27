@@ -39,12 +39,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 
 # install Opencv
-ENV OPENCV_VERSION=4.5.3
+ENV OPENCV_VERSION=4.7.0
 RUN cd /tmp \
     && wget https://github.com/opencv/opencv/archive/${OPENCV_VERSION}.zip \
 	&& unzip ${OPENCV_VERSION}.zip \
-	&& rm ${OPENCV_VERSION}.zip \
-        && cd opencv-${OPENCV_VERSION} \
+	&& rm ${OPENCV_VERSION}.zip
+RUN cd /tmp/opencv-${OPENCV_VERSION} \
 	&& mkdir build \
 	&& cd build \
 	&& cmake \
@@ -52,9 +52,20 @@ RUN cd /tmp \
 		-DCMAKE_INSTALL_PREFIX=/usr/local \
 		-DENABLE_PRECOMPILED_HEADERS=OFF ..
 RUN cd /tmp/opencv-${OPENCV_VERSION}/build \
-    && make -j8 \
+    && make -j 8 \
 	&& make install \
 	&& ldconfig
+
+
+# Install PyTorch for C++ https://pytorch.org
+# LibTorch using cxx11 ABI instead of Pre-cxx11 ABI
+ENV LIBTORCH_VERSION=2.5.1
+ENV LIBTORCH_DOWNLOAD_URL=https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-${LIBTORCH_VERSION}%2Bcpu.zip
+
+RUN wget ${LIBTORCH_DOWNLOAD_URL} -O libtorch.zip \
+    && unzip libtorch.zip \
+    && rm libtorch.zip \
+    && mv libtorch /usr/local/include/
 
 WORKDIR /workspace
 ENTRYPOINT ["/bin/bash"]

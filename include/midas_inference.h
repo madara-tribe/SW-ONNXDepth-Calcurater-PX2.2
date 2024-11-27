@@ -1,28 +1,31 @@
 #ifndef MIDAS_INFERENCE_H
 #define MIDAS_INFERENCE_H
-
 #include <opencv2/opencv.hpp>
 #include <onnxruntime/core/session/onnxruntime_cxx_api.h>
+#include <torch/torch.h>
 #include <iostream>
 #include <cstring>
+#include <vector>
+#include <string>
+
 
 class MidasInference {
 public:
     MidasInference(const std::string& modelPath, bool useCUDA = false);
     ~MidasInference();
 
-    cv::Mat PreProcess(cv::Mat& iImg);
-    cv::Mat verifyOutput(float* output);
-    void draw_depth(const cv::Mat& depth_map, int w, int h);
+    std::vector<float> PreProcess(cv::Mat& iImg);
+    cv::Mat verifyOutput(std::vector<float> output);
+    void draw_depth(const cv::Mat& depth_map, int oriW, int oriH);
     void runInference(const char* imgPath);
 
 private:
-    Ort::Env env;
     Ort::SessionOptions sessionOptions;
+    Ort::Env env;
     Ort::Session* session;
     Ort::RunOptions run_options;
     int numthreads = 0;
-    
+
     int H = 384;
     int W = 384;
     const char* input_node_name = "x.1";

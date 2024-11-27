@@ -1,6 +1,9 @@
 https://onnxruntime.ai/docs/api/c/struct_ort_1_1_session.html
 
-https://tech.furyu.jp/entry/2024/01/26/onnx
+
+https://qiita.com/mgmk2/items/c802598b9dbe7a06a425
+
+https://github.com/microsoft/onnxruntime/issues/14157
 
 https://github.com/xmba15/onnx_runtime_cpp/blob/master/src/OrtSessionHandler.cpp
 

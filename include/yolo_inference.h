@@ -1,9 +1,10 @@
+#include <opencv2/opencv.hpp>
+#include <onnxruntime/core/session/onnxruntime_cxx_api.h>
 #include <iostream>
+#include <cstring>
 #include <vector>
 #include <string>
-#include <cstring>
-#include <onnxruntime_cxx_api.h>
-#include <opencv2/opencv.hpp>
+
 
 extern std::vector<std::string> classNames; // Use extern to declare the variable
 
@@ -32,17 +33,17 @@ typedef struct Result {
 class YoloDetect {
 public:
     YoloDetect(const std::string& modelPath);
-    
     void drawBoundingBox(cv::Mat& image, std::vector<Result>& resultVector);
     cv::Mat preprocess(cv::Mat& image, int model_input_width, int model_input_height);
     std::vector<Result> postprocess(cv::Size originalImageSize, std::vector<Ort::Value>& outputTensors);
     std::vector<Ort::Value> RunInference(cv::Mat& inputImage);
 private:
-    Ort::AllocatorWithDefaultOptions allocator;
-    Ort::SessionOptions session_options;
+    Ort::SessionOptions sessionOptions;
     Ort::Env env;
     Ort::Session* session;
+    Ort::RunOptions run_options;
     int numthreads = 0;
+
     const char* input_node_name = "images";
     const char* output_node_name = "output";
     

@@ -1,4 +1,3 @@
-#include "utility.h"
 #include "midas_inference.h"
 
 
@@ -18,55 +17,49 @@ MidasInference::~MidasInference() {
     delete session;
 }
 
-cv::Mat MidasInference::PreProcess(cv::Mat& iImg) {
+std::vector<float> MidasInference::PreProcess(cv::Mat& iImg) {
     cv::cvtColor(iImg, iImg, cv::COLOR_BGR2RGB);
-    cv::Mat resizedImage;
     cv::resize(iImg, iImg, cv::Size(W, H), cv::InterpolationFlags::INTER_CUBIC);
-    cv::Mat channel_[3];
-    cv::split(iImg, channel_);
-    channel_[0] = (channel_[0] - 0.5) / 0.5;
-    channel_[1] = (channel_[1] - 0.5) / 0.5;
-    channel_[2] = (channel_[2] - 0.5) / 0.5;
-    cv::merge(channel_, 3, iImg);
-    
-    cv::Mat floatImage;
-    iImg.convertTo(floatImage, CV_32F, 1.0 / 255.0);
-    
-    cv::Mat blobImage = cv::dnn::blobFromImage(floatImage);
-    return blobImage;
+    // to 1 dim
+    iImg = iImg.reshape(1, 1);
+    std::vector<float> vec;
+    iImg.convertTo(vec, CV_32FC1, 1. / 255);
+    // HWC -> CHW
+    std::vector<float> output;
+    for (size_t ch = 0; ch<3; ++ch){
+        for (size_t i = ch; i < vec.size(); i +=3){
+            output.emplace_back((vec[i]-0.5) / 0.5);
+        }
+    }
+    return output;
 }
 
-cv::Mat MidasInference::verifyOutput(float* output) {
+cv::Mat MidasInference::verifyOutput(std::vector<float> output) {
     cv::Mat segMat = cv::Mat::zeros(cv::Size(H, W), CV_8U);
     cv::Mat color_map = cv::Mat::zeros(cv::Size(H, W), CV_8U);
     for (int row = 0; row < H; row++) {
         for (int col = 0; col < W; col++) {
-            segMat.at<uint8_t>(row, col) = static_cast<uint8_t>(*(output + (row * H) + col));
+            segMat.at<uint8_t>(row, col) = static_cast<uint8_t>(output[row * W + col]);
         }
     }
     cv::applyColorMap(segMat, color_map, cv::COLORMAP_JET);
     cv::imwrite("depth_map.png", segMat);
-    cv::imwrite("color_map.png", color_map);
     return segMat;
 }
 
-void MidasInference::draw_depth(const cv::Mat& depth_map, int w, int h) {
-    double min_depth, max_depth;
-    cv::minMaxLoc(depth_map, &min_depth, &max_depth);
-    min_depth = std::min(min_depth, set_min_depth);
-    max_depth = std::max(max_depth, set_max_depth);
+void MidasInference::draw_depth(const cv::Mat& depth_map, int oriW, int oriH) {
+    float min_val = 0;
+    float max_val = 100;
 
-    cv::Mat norm_depth_map;
-    norm_depth_map = 255.0 * (depth_map - min_depth) / (max_depth - min_depth);
-    norm_depth_map = 255.0 - norm_depth_map;
-
+    float range_val = max_val - min_val;
+    std::cout << "min max" << max_val << min_val << std::endl;
+    cv::Mat norm_depth_map = ((depth_map - min_val) / range_val) * 255.0;
+    norm_depth_map = 255 - norm_depth_map;
+    
     cv::Mat color_depth;
-    norm_depth_map.convertTo(color_depth, CV_8U);
-
-    cv::applyColorMap(color_depth, color_depth, cv::COLORMAP_JET);
-
-    cv::resize(color_depth, color_depth, cv::Size(w, h));
-    cv::imwrite("color_map2.png", color_depth);
+    cv::applyColorMap(norm_depth_map, color_depth, cv::COLORMAP_JET);
+    cv::resize(color_depth, color_depth, cv::Size(oriW, oriH));
+    cv::imwrite("color_map.jpg", color_depth);
 }
 
 void MidasInference::runInference(const char* imgPath) {
@@ -74,22 +67,28 @@ void MidasInference::runInference(const char* imgPath) {
     
     int inputHeight = img.rows;
     int inputWidth = img.cols;
+    int insize = H * W * 3;
+    int outsize = H * W * 1;
+    // vector for input and output
+    std::vector<float> input(H * W * 3);
+    std::vector<float> results(1 * H * W);
     
-    cv::Mat blob = PreProcess(img);
-
+    // preprocess input image
+    std::vector<float> blob = PreProcess(img);
+    assert(blob.size == insize);
+    // copy images to input vector
+    std::copy(blob.begin(), blob.end(), input.begin());
+    // create input Tenspr
     std::vector<int64_t> inputNodeDims = {1, 3, H, W};
     Ort::MemoryInfo memory_info(Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU));
-    Ort::Value inputTensor = Ort::Value::CreateTensor<float>(memory_info, blob.ptr<float>(), blob.total() * sizeof(float), inputNodeDims.data(), inputNodeDims.size());
-
-    std::vector<float> output_data(1 * H * W);
+    Ort::Value inputTensor = Ort::Value::CreateTensor<float>(memory_info, input.data(), input.size(), inputNodeDims.data(), inputNodeDims.size());
+    // create output Tenspr
     const std::vector<int64_t> output_shapes{1, H, W};
-    Ort::Value output_tensor = Ort::Value::CreateTensor<float>(memory_info, output_data.data(), output_data.size(), output_shapes.data(), output_shapes.size());
-
+    Ort::Value output_tensor = Ort::Value::CreateTensor<float>(memory_info, results.data(), results.size(), output_shapes.data(), output_shapes.size());
+    // Inference
     session->Run(run_options, &input_node_name, &inputTensor, 1U, &output_node_name, &output_tensor, 1U);
 
-    float* output = output_tensor.GetTensorMutableData<float>();
-    cv::Mat depth_map = verifyOutput(output);
+    cv::Mat depth_map = verifyOutput(results);
     draw_depth(depth_map, inputWidth, inputHeight);
 }
-
 
