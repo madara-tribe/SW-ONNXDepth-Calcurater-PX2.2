@@ -69,12 +69,12 @@ cv::Mat MidasInference::runInference(cv::Mat& img) {
     int insize = H * W * 3;
     int outsize = H * W * 1;
     // vector for input and output
-    std::vector<float> input(H * W * 3);
-    std::vector<float> results(1 * H * W);
+    std::vector<float> input(insize);
+    std::vector<float> results(outsize);
     
     // preprocess input image
     std::vector<float> blob = PreProcess(img);
-    assert(blob.size == insize);
+    assert(blob.size() == insize);
     // copy images to input vector
     std::copy(blob.begin(), blob.end(), input.begin());
     // create input Tenspr

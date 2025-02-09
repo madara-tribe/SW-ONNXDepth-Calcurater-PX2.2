@@ -1,5 +1,0 @@
-/workspace/experiment/pythorch/build/CMakeFiles/edit_cache.dir
-/workspace/experiment/pythorch/build/CMakeFiles/rebuild_cache.dir
-/workspace/experiment/pythorch/build/src/CMakeFiles/inference.dir
-/workspace/experiment/pythorch/build/src/CMakeFiles/edit_cache.dir
-/workspace/experiment/pythorch/build/src/CMakeFiles/rebuild_cache.dir

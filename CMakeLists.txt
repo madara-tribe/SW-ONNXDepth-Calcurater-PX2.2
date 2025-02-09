@@ -1,25 +1,58 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.5)
+project(px2)
 
-project(inference VERSION 0.0.1 LANGUAGES CXX)
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_BUILD_TYPE RelWithDebInfo)
+# Default to C++14
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 14)
+endif()
 
-# torch
-set(CMAKE_PREFIX_PATH "/usr/local/include/libtorch/share/cmake/Torch")
-set(LIBTORCH_DIR "/usr/local/include/libtorch")
-list(APPEND CMAKE_PREFIX_PATH ${LIBTORCH_DIR})
-find_package(Torch REQUIRED)
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
 
-# onnxruntime
+# Find dependencies (ROS 2)
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
+
+# OpenCV
+find_package(OpenCV REQUIRED)
+
+
+# ONNX Runtime
 find_path(ONNX_RUNTIME_SESSION_INCLUDE_DIRS onnxruntime_cxx_api.h HINTS /usr/local/include/onnxruntime/core/session/)
 find_library(ONNX_RUNTIME_LIB onnxruntime HINTS /usr/local/include/onnxruntime)
 
-# cv2
-find_package(OpenCV REQUIRED)
-if(OpenCV_FOUND)
-    message(STATUS "Found OpenCV: ${OpenCV_VERSION}")
-else()
-    message(FATAL_ERROR "OpenCV not found")
-endif()
+# **Include Directories**
+include_directories(
+  ${CMAKE_SOURCE_DIR}/include  
+)
 
-add_subdirectory(src)
+# Project ==> Node
+add_executable(${PROJECT_NAME} 
+  src/inference.cpp 
+  src/midas_inference.cpp 
+  src/yolo_inference.cpp
+)
+
+# Ensure dependencies are linked correctly
+target_include_directories(${PROJECT_NAME} PRIVATE 
+  ${CMAKE_SOURCE_DIR}/include
+  ${ONNX_RUNTIME_SESSION_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
+)
+
+target_link_libraries(${PROJECT_NAME} 
+  ${ONNX_RUNTIME_LIB} 
+  ${OpenCV_LIBS}
+)
+
+ament_target_dependencies(${PROJECT_NAME} rclcpp std_msgs)
+
+# Install targets
+install(TARGETS
+  ${PROJECT_NAME}
+  DESTINATION lib/${PROJECT_NAME})
+
+ament_package()
+

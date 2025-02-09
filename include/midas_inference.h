@@ -2,7 +2,6 @@
 #define MIDAS_INFERENCE_H
 #include <opencv2/opencv.hpp>
 #include <onnxruntime/core/session/onnxruntime_cxx_api.h>
-#include <torch/torch.h>
 #include <iostream>
 #include <cstring>
 #include <vector>

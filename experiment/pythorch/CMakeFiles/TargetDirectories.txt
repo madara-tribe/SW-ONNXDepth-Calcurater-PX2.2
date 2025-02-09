@@ -1,5 +1,0 @@
-/workspace/experiment/pythorch/CMakeFiles/edit_cache.dir
-/workspace/experiment/pythorch/CMakeFiles/rebuild_cache.dir
-/workspace/experiment/pythorch/src/CMakeFiles/example-app.dir
-/workspace/experiment/pythorch/src/CMakeFiles/edit_cache.dir
-/workspace/experiment/pythorch/src/CMakeFiles/rebuild_cache.dir
