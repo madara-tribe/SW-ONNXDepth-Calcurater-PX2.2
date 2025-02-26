@@ -13,8 +13,8 @@ this repository is base system of the other practical ones.
 used main technology engaged are as follows.
 - [midas](https://github.com/madara-tribe/ONNX-MiDaS)
 - [yolov7](https://github.com/madara-tribe/custom-yolov7)
-・onnx
-・python, c++
+- onnx
+- Python, C++
 
 # References
 
