@@ -1,4 +1,4 @@
-# ONNX Depth calcurater PX2.2
+# ONNX Depth calcurater PX2.2 (Version 2.2)
 
 this is software for laser tracking system(version 2.2). main role is to calculate z distance through yolo and midas.
 
@@ -9,10 +9,10 @@ for more practical use, see other repository.
 
 this repository is base system of the other practical ones. 
 
-# feature
+# Related repositories
 used main technology engaged are as follows.
-・midas
-・yolov7
+- [midas](https://github.com/madara-tribe/ONNX-MiDaS)
+- [yolov7](https://github.com/madara-tribe/custom-yolov7)
 ・onnx
 ・python, c++
 
